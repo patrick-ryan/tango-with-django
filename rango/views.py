@@ -14,6 +14,8 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 
+from rango.bing_search import run_query
+
 def encode_url(category_name):
     return category_name.replace(' ', '_')
 
@@ -31,6 +33,9 @@ def index(request):
     # Place the list in our context_dict dictionary which will be passed to the template engine.
     category_list = Category.objects.order_by('-likes')[:5]
     context_dict = {'categories': category_list}
+
+    page_list = Page.objects.order_by('-views')[:5]
+    context_dict['pages'] = page_list
 
     # The following two lines are new.
     # We loop through each category returned, and create a URL attribute.
@@ -260,3 +265,16 @@ def user_logout(request):
 
     # Take the user back to the homepage.
     return HttpResponseRedirect('/rango/')
+
+def search(request):
+    context = RequestContext(request)
+    result_list = []
+
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+
+        if query:
+            # Run our Bing function to get the results list!
+            result_list = run_query(query)
+
+    return render_to_response('rango/search.html', {'result_list': result_list}, context)
